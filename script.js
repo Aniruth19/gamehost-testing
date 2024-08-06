@@ -1,58 +1,78 @@
-const cells = document.querySelectorAll('.cell');
-const statusDisplay = document.getElementById('status');
+const board = document.getElementById('board');
 const restartButton = document.getElementById('restart-button');
 
-let currentPlayer = 'X';
-let board = ['','','','','','','','',''];
-let gameActive = true;
+let cards = [];
+let cardValues = [];
+let flippedCards = [];
+let matchedPairs = 0;
+const cardValuesArray = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
-function handleCellClick(event) {
-    const cellIndex = event.target.getAttribute('data-index');
+function initializeGame() {
+    cards = [];
+    cardValues = [];
+    flippedCards = [];
+    matchedPairs = 0;
 
-    if (board[cellIndex] !== '' || !gameActive) {
+    // Generate pairs of card values
+    let values = [...cardValuesArray, ...cardValuesArray];
+    values = shuffle(values);
+
+    // Create card elements
+    board.innerHTML = '';
+    values.forEach((value, index) => {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.setAttribute('data-value', value);
+        card.setAttribute('data-index', index);
+        card.addEventListener('click', handleCardClick);
+        board.appendChild(card);
+        cards.push(card);
+    });
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function handleCardClick(event) {
+    const card = event.target;
+    if (card.classList.contains('flipped') || flippedCards.length === 2) {
         return;
     }
 
-    board[cellIndex] = currentPlayer;
-    event.target.textContent = currentPlayer;
-    checkWin();
-    if (gameActive) {
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-        statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+    card.classList.add('flipped');
+    card.textContent = card.getAttribute('data-value');
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+        checkMatch();
     }
 }
 
-function checkWin() {
-    const winPatterns = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-        [0, 4, 8], [2, 4, 6] // diagonals
-    ];
-
-    for (let pattern of winPatterns) {
-        const [a, b, c] = pattern;
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            statusDisplay.textContent = `Player ${board[a]} wins!`;
-            gameActive = false;
-            return;
+function checkMatch() {
+    const [card1, card2] = flippedCards;
+    if (card1.getAttribute('data-value') === card2.getAttribute('data-value')) {
+        card1.classList.add('matched');
+        card2.classList.add('matched');
+        matchedPairs++;
+        if (matchedPairs === cardValuesArray.length) {
+            setTimeout(() => alert('Congratulations! You won!'), 500);
         }
+    } else {
+        setTimeout(() => {
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+            card1.textContent = '';
+            card2.textContent = '';
+        }, 1000);
     }
-
-    if (!board.includes('')) {
-        statusDisplay.textContent = 'It\'s a draw!';
-        gameActive = false;
-    }
+    flippedCards = [];
 }
 
-function restartGame() {
-    board = ['','','','','','','','',''];
-    cells.forEach(cell => cell.textContent = '');
-    currentPlayer = 'X';
-    statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
-    gameActive = true;
-}
+restartButton.addEventListener('click', initializeGame);
 
-cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-restartButton.addEventListener('click', restartGame);
-
-restartGame(); 
+initializeGame(); // Initialize the game when the page loads
