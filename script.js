@@ -1,53 +1,58 @@
-const box = document.getElementById('box');
-const scoreDisplay = document.getElementById('score');
-const timerDisplay = document.getElementById('timer');
-const startButton = document.getElementById('start-button');
+const cells = document.querySelectorAll('.cell');
+const statusDisplay = document.getElementById('status');
+const restartButton = document.getElementById('restart-button');
 
-let score = 0;
-let timer;
-let timeLeft = 10;
+let currentPlayer = 'X';
+let board = ['','','','','','','','',''];
+let gameActive = true;
 
-function startGame() {
-    score = 0;
-    timeLeft = 10;
-    scoreDisplay.textContent = `Score: ${score}`;
-    timerDisplay.textContent = `Time Left: ${timeLeft}s`;
-    box.style.display = 'block';
-    moveBox();
-    startButton.disabled = true;
+function handleCellClick(event) {
+    const cellIndex = event.target.getAttribute('data-index');
 
-    timer = setInterval(() => {
-        timeLeft--;
-        timerDisplay.textContent = `Time Left: ${timeLeft}s`;
-        if (timeLeft <= 0) {
-            endGame();
+    if (board[cellIndex] !== '' || !gameActive) {
+        return;
+    }
+
+    board[cellIndex] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    checkWin();
+    if (gameActive) {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+    }
+}
+
+function checkWin() {
+    const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+        [0, 4, 8], [2, 4, 6] // diagonals
+    ];
+
+    for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            statusDisplay.textContent = `Player ${board[a]} wins!`;
+            gameActive = false;
+            return;
         }
-    }, 1000);
+    }
+
+    if (!board.includes('')) {
+        statusDisplay.textContent = 'It\'s a draw!';
+        gameActive = false;
+    }
 }
 
-function moveBox() {
-    const container = document.getElementById('game-container');
-    const maxX = container.clientWidth - box.clientWidth;
-    const maxY = container.clientHeight - box.clientHeight;
-    
-    const randomX = Math.random() * maxX;
-    const randomY = Math.random() * maxY;
-
-    box.style.left = `${randomX}px`;
-    box.style.top = `${randomY}px`;
+function restartGame() {
+    board = ['','','','','','','','',''];
+    cells.forEach(cell => cell.textContent = '');
+    currentPlayer = 'X';
+    statusDisplay.textContent = `Player ${currentPlayer}'s turn`;
+    gameActive = true;
 }
 
-box.addEventListener('click', () => {
-    score++;
-    scoreDisplay.textContent = `Score: ${score}`;
-    moveBox();
-});
+cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+restartButton.addEventListener('click', restartGame);
 
-function endGame() {
-    clearInterval(timer);
-    box.style.display = 'none';
-    startButton.disabled = false;
-    alert(`Game Over! Your final score is ${score}`);
-}
-
-startButton.addEventListener('click', startGame);
+restartGame(); 
